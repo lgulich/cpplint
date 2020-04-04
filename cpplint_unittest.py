@@ -6089,7 +6089,7 @@ class NestingStateTest(unittest.TestCase):
     self.assertEquals(self.nesting_state.stack[0].class_indent, 0)
     self.UpdateWithLines(['}'])
     self.assertEquals(len(self.nesting_state.stack), 0)
-    
+
   def testClass(self):
     self.UpdateWithLines(['class A {'])
     self.assertEquals(len(self.nesting_state.stack), 1)
