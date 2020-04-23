@@ -5281,6 +5281,13 @@ class OrderOfIncludesTest(CpplintTestBase):
                      self.include_state.CheckNextIncludeOrder(
                          cpplint._C_SYS_HEADER))
 
+  def testCheckNextIncludeOrder_OtherSysThenCpp(self):
+    self.assertEqual('', self.include_state.CheckNextIncludeOrder(
+        cpplint._OTHER_SYS_HEADER))
+    self.assertEqual('Found C++ system header after other system header',
+                     self.include_state.CheckNextIncludeOrder(
+                         cpplint._CPP_SYS_HEADER))
+
   def testCheckNextIncludeOrder_LikelyThenCpp(self):
     self.assertEqual('', self.include_state.CheckNextIncludeOrder(
         cpplint._LIKELY_MY_HEADER))
