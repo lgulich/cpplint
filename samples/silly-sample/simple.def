@@ -111,4 +111,3 @@ src/sillycode.cpp:257:  Tab found; better to use spaces  [whitespace/tab] [1]
 src/sillycode.cpp:257:  At least two spaces is best between code and comments  [whitespace/comments] [2]
 src/sillycode.cpp:260:  Empty loop bodies should use {} or continue  [whitespace/empty_loop_body] [5]
 src/sillycode.cpp:260:  At least two spaces is best between code and comments  [whitespace/comments] [2]
-
