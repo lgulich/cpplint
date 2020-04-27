@@ -39,19 +39,19 @@ To install cpplint from PyPI, run:
 
 .. code-block:: bash
 
-    $ pip install cpplint
+    $ pip install lg-cpplint
 
 Then run it with:
 
 .. code-block:: bash
 
-    $ cpplint [OPTIONS] files
+    $ lg-cpplint [OPTIONS] files
 
 For full usage instructions, run:
 
 .. code-block:: bash
 
-    $ cpplint --help
+    $ lg-cpplint --help
 
 Changes
 -------
