@@ -59,7 +59,7 @@ import xml.etree.ElementTree
 # if empty, use defaults
 _valid_extensions = set([])
 
-__VERSION__ = '0.1.0'
+__VERSION__ = '0.1.1'
 
 try:
   xrange          # Python 2
@@ -2176,6 +2176,12 @@ def GetHeaderGuardCPPVariable(filename):
 
   fileinfo = FileInfo(filename)
   file_path_from_root = fileinfo.RepositoryName()
+
+  # Header guard for catkin package.
+  include_path = re.split('.*/include/(.*)', file_path_from_root)[1]
+  guard_name = re.sub(r'[^a-zA-Z0-9]', '_', include_path).upper() + '_'
+  return guard_name
+
 
   def FixupPathFromRoot():
     if _root_debug:

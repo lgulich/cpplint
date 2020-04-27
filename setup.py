@@ -46,7 +46,7 @@ setup(name='lg-cpplint',
       # generate platform specific start script
       entry_points={
           'console_scripts': [
-              'lg-cpplint = cpplint:main'
+              'cpplint = cpplint:main'
           ]
       },
       install_requires=[],
