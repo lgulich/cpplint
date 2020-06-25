@@ -59,7 +59,7 @@ import xml.etree.ElementTree
 # if empty, use defaults
 _valid_extensions = set([])
 
-__VERSION__ = '0.1.2'
+__VERSION__ = '0.1.3'
 
 try:
   xrange          # Python 2
@@ -6691,7 +6691,7 @@ def PrintUsage(message):
     sys.exit(0)
 
 def PrintVersion():
-  sys.stdout.write('Cpplint fork (https://github.com/cpplint/cpplint)\n')
+  sys.stdout.write('Cpplint fork (https://github.com/lgulich/cpplint)\n')
   sys.stdout.write('cpplint ' + __VERSION__ + '\n')
   sys.stdout.write('Python ' + sys.version + '\n')
   sys.exit(0)
