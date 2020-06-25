@@ -5001,10 +5001,7 @@ def _ClassifyInclude(fileinfo, include, used_angle_brackets, include_order="defa
   # Mark include as std C header if in a known folder for standard-ish C headers.
   is_std_c_header = Search(r'(?:%s)\/.*\.h' % "|".join(C_STANDARD_HEADER_FOLDERS), include)
 
-  # Headers with C++ extensions shouldn't be considered C system headers
-  is_system = used_angle_brackets and not os.path.splitext(include)[1] in ['.hpp', '.hxx', '.h++']
-
-  if is_system:
+  if used_angle_brackets:
     if is_cpp_header:
       return _CPP_SYS_HEADER
     if is_c_header or is_std_c_header:
