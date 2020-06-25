@@ -127,13 +127,18 @@ class ErrorCollector(object):
         self._errors = self._errors[0:index] + self._errors[(index + 1):]
         break
 
-
 # This class is a lame mock of codecs. We do not verify filename, mode, or
 # encoding, but for the current use case it is not needed.
 class MockIo(object):
 
   def __init__(self, mock_file):
-    self.mock_file = mock_file
+    # wrap list to allow "with open(mock)"
+    class EnterableList(list):
+      def __enter__(self):
+        return self
+      def __exit__(self, type, value, tb):
+        return self
+    self.mock_file = EnterableList(mock_file)
 
   def open(self,  # pylint: disable=C6409
            unused_filename, unused_mode, unused_encoding, _):
@@ -3707,14 +3712,31 @@ class CpplintTest(CpplintTestBase):
     self.TestLint(' protected: \\', '')
     self.TestLint('  public:      \\', '')
     self.TestLint('   private:   \\', '')
+    # examples using QT signals/slots macro
     self.TestMultiLineLint(
         TrimExtraIndent("""
             class foo {
              public slots:
               void bar();
+             signals:
             };"""),
-        'Weird number of spaces at line-start.  '
-        'Are you using a 2-space indent?  [whitespace/indent] [3]')
+        '')
+    self.TestMultiLineLint(
+        TrimExtraIndent("""
+            class foo {
+              public slots:
+              void bar();
+            };"""),
+        'public slots: should be indented +1 space inside class foo'
+        '  [whitespace/indent] [3]')
+    self.TestMultiLineLint(
+        TrimExtraIndent("""
+            class foo {
+              signals:
+              void bar();
+            };"""),
+        'signals: should be indented +1 space inside class foo'
+        '  [whitespace/indent] [3]')
     self.TestMultiLineLint(
         TrimExtraIndent('''
             static const char kRawString[] = R"("
@@ -3838,6 +3860,15 @@ class CpplintTest(CpplintTestBase):
           goto fail;""",
         'If/else bodies with multiple statements require braces'
         '  [readability/braces] [4]')
+    self.TestMultiLineLint(
+        """
+        if constexpr (foo) {
+          goto fail;
+          goto fail;
+        } else if constexpr (bar) {
+          hello();
+        }""",
+        '')
     self.TestMultiLineLint(
         """
         if (foo)
@@ -4346,7 +4377,7 @@ class CpplintTest(CpplintTestBase):
         'foo.' + extension, 'namespace {',
         'Do not use unnamed namespaces in header files.  See'
         ' https://google-styleguide.googlecode.com/svn/trunk/cppguide.xml#Namespaces'
-        ' for more information.  [build/namespaces] [4]')
+        ' for more information.  [build/namespaces_headers] [4]')
     # namespace registration macros are OK.
     self.TestLanguageRulesCheck('foo.' + extension, 'namespace {  \\', '')
     # named namespaces are OK.
@@ -4796,6 +4827,23 @@ class CpplintTest(CpplintTestBase):
         error_collector)
       self.assertEqual(
         0,
+        error_collector.Results().count(expected))
+
+      # Unix directory aliases are not allowed, and should trigger the
+      # "include itse header file" error
+      error_collector = ErrorCollector(self.assertTrue)
+      cpplint.ProcessFileData(
+        'test/foo.cc', 'cc',
+        [r'#include "./test/foo.h"',
+         ''
+         ],
+        error_collector)
+      expected = "{dir}/{fn}.cc should include its header file {dir}/{fn}.h{unix_text}  [build/include] [5]".format(
+          fn="foo",
+          dir=test_directory,
+          unix_text=". Relative paths like . and .. are not allowed.")
+      self.assertEqual(
+        1,
         error_collector.Results().count(expected))
 
       # This should continue to work
@@ -5337,6 +5385,14 @@ class OrderOfIncludesTest(CpplintTestBase):
                      classify_include(file_info('foo/foo.cc'),
                                       'sys/time.h',
                                       True))
+    self.assertEqual(cpplint._C_SYS_HEADER,
+                     classify_include(file_info('foo/foo.cc'),
+                                      'netipx/ipx.h',
+                                      True))
+    self.assertEqual(cpplint._C_SYS_HEADER,
+                     classify_include(file_info('foo/foo.cc'),
+                                      'arpa/ftp.h',
+                                      True))
     self.assertEqual(cpplint._CPP_SYS_HEADER,
                      classify_include(file_info('foo/foo.cc'),
                                       'string',
@@ -5345,10 +5401,15 @@ class OrderOfIncludesTest(CpplintTestBase):
                      classify_include(file_info('foo/foo.cc'),
                                       'typeinfo',
                                       True))
-    self.assertEqual(cpplint._OTHER_SYS_HEADER,
+    self.assertEqual(cpplint._C_SYS_HEADER,
                      classify_include(file_info('foo/foo.cc'),
                                       'foo/foo.h',
                                       True))
+    self.assertEqual(cpplint._OTHER_SYS_HEADER,
+                     classify_include(file_info('foo/foo.cc'),
+                                      'foo/foo.h',
+                                      True,
+                                      "standardcfirst"))
     self.assertEqual(cpplint._OTHER_HEADER,
                      classify_include(file_info('foo/foo.cc'),
                                       'string',
@@ -6007,6 +6068,26 @@ class NestingStateTest(unittest.TestCase):
     self.assertTrue(self.nesting_state.stack[2].seen_open_brace)
 
     self.UpdateWithLines(['}', '}}'])
+    self.assertEquals(len(self.nesting_state.stack), 0)
+
+  def testDecoratedClass(self):
+    self.UpdateWithLines(['class Decorated_123 API A {'])
+    self.assertEquals(len(self.nesting_state.stack), 1)
+    self.assertTrue(isinstance(self.nesting_state.stack[0], cpplint._ClassInfo))
+    self.assertEquals(self.nesting_state.stack[0].name, 'A')
+    self.assertFalse(self.nesting_state.stack[0].is_derived)
+    self.assertEquals(self.nesting_state.stack[0].class_indent, 0)
+    self.UpdateWithLines(['}'])
+    self.assertEquals(len(self.nesting_state.stack), 0)
+
+  def testInnerClass(self):
+    self.UpdateWithLines(['class A::B::C {'])
+    self.assertEquals(len(self.nesting_state.stack), 1)
+    self.assertTrue(isinstance(self.nesting_state.stack[0], cpplint._ClassInfo))
+    self.assertEquals(self.nesting_state.stack[0].name, 'A::B::C')
+    self.assertFalse(self.nesting_state.stack[0].is_derived)
+    self.assertEquals(self.nesting_state.stack[0].class_indent, 0)
+    self.UpdateWithLines(['}'])
     self.assertEquals(len(self.nesting_state.stack), 0)
 
   def testClass(self):

@@ -35,10 +35,12 @@ class Lint(Cmd):
     def run(self):
         self.execute('cpplint.py')
 
+# some pip versions bark on comments (e.g. on travis)
+def read_without_comments(filename):
+    with open(filename) as f:
+        return [line for line in f.read().splitlines() if not len(line) == 0 and not line.startswith('#')]
 
-with open('test-requirements') as f:
-    test_required = f.read().splitlines()
-
+test_required = read_without_comments('test-requirements')
 
 setup(name='lg-cpplint',
       version=cpplint.__VERSION__,
@@ -57,10 +59,9 @@ setup(name='lg-cpplint',
       maintainer_email='lgulich@ethz.ch',
       classifiers=['Programming Language :: Python',
                    'Programming Language :: Python :: 3',
-                   'Programming Language :: Python :: 3.4',
-                   'Programming Language :: Python :: 3.5',
                    'Programming Language :: Python :: 3.6',
                    'Programming Language :: Python :: 3.7',
+                   'Programming Language :: Python :: 3.8',
                    'Programming Language :: C++',
                    'Development Status :: 5 - Production/Stable',
                    'Environment :: Console',
@@ -76,7 +77,7 @@ setup(name='lg-cpplint',
       # extras_require allow pip install .[dev]
       extras_require={
           'test': test_required,
-          'dev': open('dev-requirements').read().splitlines() + test_required
+          'dev': read_without_comments('dev-requirements') + test_required
       },
       cmdclass={
           'lint': Lint
