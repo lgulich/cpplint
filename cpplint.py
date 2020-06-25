@@ -4995,13 +4995,11 @@ def _ClassifyInclude(fileinfo, include, used_angle_brackets, include_order="defa
   # those already checked for above.
   is_cpp_header = include in _CPP_HEADERS
 
-  # Mark include as C header if in list or in a known folder for standard-ish C headers.
-  is_std_c_header = (include_order == "default") or (include in _C_HEADERS
-            # additional linux glibc header folders
-            or Search(r'(?:%s)\/.*\.h' % "|".join(C_STANDARD_HEADER_FOLDERS), include))
+  # Mark include as C header if in list.
+  is_c_header = include in _C_HEADERS 
 
-  # Mark include as C header if in list or of type 'sys/*.h'.
-  is_c_h = include in _C_HEADERS or Search(r'sys\/.*\.h', include)
+  # Mark include as std C header if in a known folder for standard-ish C headers.
+  is_std_c_header = Search(r'(?:%s)\/.*\.h' % "|".join(C_STANDARD_HEADER_FOLDERS), include)
 
   # Headers with C++ extensions shouldn't be considered C system headers
   is_system = used_angle_brackets and not os.path.splitext(include)[1] in ['.hpp', '.hxx', '.h++']
@@ -5009,7 +5007,7 @@ def _ClassifyInclude(fileinfo, include, used_angle_brackets, include_order="defa
   if is_system:
     if is_cpp_header:
       return _CPP_SYS_HEADER
-    if is_std_c_header:
+    if is_c_header or is_std_c_header:
       return _C_SYS_HEADER
     else:
       return _OTHER_SYS_HEADER
