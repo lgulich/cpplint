@@ -2274,6 +2274,15 @@ def PathSplitToList(path):
   lst.reverse()
   return lst
 
+def CreateCatkinIncludePath(file_path_from_root):
+    include_path = re.split('.*/include/(.*)', file_path_from_root)[1]
+
+def CreateArduinoIncludePath(file_path_from_root):
+    include_path = re.split('.*/libraries/(.*)', file_path_from_root)[1]
+
+def CreateCatkinTestIncludePath(file_path_from_root):
+    include_path = re.split('.*/test/(.*)', file_path_from_root)[1]
+
 def GetHeaderGuardCPPVariable(filename):
   """Returns the CPP variable that should be used as a header guard.
 
@@ -2296,8 +2305,14 @@ def GetHeaderGuardCPPVariable(filename):
   fileinfo = FileInfo(filename)
   file_path_from_root = fileinfo.RepositoryName()
 
-  # Header guard for catkin package.
-  include_path = re.split('.*/include/(.*)', file_path_from_root)[1]
+  try: 
+      include_path = CreateCatkinIncludePath(file_path_from_root)
+  except IndexError:
+      try:
+          include_path = CreateArduinoIncludePath(file_path_from_root)
+      except:
+          include_path = CreateCatkinTestIncludePath(file_path_from_root)
+
   guard_name = re.sub(r'[^a-zA-Z0-9]', '_', include_path).upper() + '_'
   return guard_name
 
